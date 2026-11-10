@@ -1,0 +1,480 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SelfSecureBoot.ViewModels"
+        xmlns:core="clr-namespace:SelfSecureBoot.Core"
+        x:Class="SelfSecureBoot.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:Name="ThisWindow"
+        Title="EFI Signer — UEFI Secure Boot Manager"
+        Width="960" Height="540"
+        MinWidth="800" MinHeight="480"
+        Icon="avares://SelfSecureBoot/appicon.ico"
+        Background="#0F111A"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background"     Value="#171926"/>
+      <Setter Property="BorderBrush"    Value="#25283D"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius"   Value="6"/>
+    </Style>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontSize"   Value="10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#94A3B8"/>
+    </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="FontSize"    Value="10"/>
+      <Setter Property="Padding"     Value="7,2"/>
+      <Setter Property="Background"  Value="#1E293B"/>
+      <Setter Property="Foreground"  Value="#38BDF8"/>
+    </Style>
+  </Window.Styles>
+
+  <!-- Root: header + workspace stacked vertically, 6px outer margin -->
+  <Grid RowDefinitions="Auto,*" Margin="6,5,6,5">
+
+    <!-- ══ HEADER ══ -->
+    <Border Grid.Row="0" Classes="card" Margin="0,0,0,5" Padding="8,5">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+
+        <!-- Logo -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+          <Image Source="avares://SelfSecureBoot/appicon.png" Width="22" Height="22"/>
+          <StackPanel VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="EFI Signer" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF"/>
+              <Border Background="#2E1A47" BorderBrush="#7C3AED" BorderThickness="1"
+                      CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+                <TextBlock Text="UEFI Secure Boot OpenCore Signer &amp; Manager"
+                           FontSize="9" FontWeight="SemiBold" Foreground="#C4B5FD"/>
+              </Border>
+            </StackPanel>
+            <TextBlock Text="Cross-platform Authenticode PE signer, EFI partition manager &amp; OpenCore Secure Boot enabler"
+                       FontSize="9" Foreground="#64748B"/>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Right chips -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+          <Button Command="{Binding RelaunchElevatedCommand}"
+                  Background="{Binding ElevationBadgeBackground}"
+                  BorderBrush="{Binding ElevationBadgeBorder}" BorderThickness="1"
+                  CornerRadius="3" Padding="6,2"
+                  ToolTip.Tip="{Binding ElevationTooltip}">
+            <TextBlock Text="{Binding ElevationBadgeText}" FontSize="9" FontWeight="SemiBold"
+                       Foreground="{Binding ElevationBadgeForeground}"/>
+          </Button>
+
+          <Border Background="{Binding SecureBootBadgeBackground}"
+                  BorderBrush="{Binding SecureBootBadgeBorder}"
+                  BorderThickness="1" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding SecureBootBadgeText}" FontSize="9" FontWeight="SemiBold"
+                       Foreground="{Binding SecureBootBadgeForeground}"/>
+          </Border>
+
+          <Border Background="{Binding KeyBadgeBackground}"
+                  BorderBrush="{Binding KeyBadgeBorder}"
+                  BorderThickness="1" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding KeyBadgeText}" FontSize="9" FontWeight="SemiBold"
+                       Foreground="{Binding KeyBadgeForeground}"/>
+          </Border>
+
+          <Button Content="📖 Guide" Command="{Binding OpenGuideCommand}"
+                  Background="#1E293B" Foreground="#38BDF8"
+                  FontSize="9" FontWeight="SemiBold" Padding="7,2"/>
+        </StackPanel>
+
+      </Grid>
+    </Border>
+
+    <!-- ══ MAIN WORKSPACE ══ -->
+    <Grid Grid.Row="1" ColumnDefinitions="262,8,*">
+
+      <!-- ───── LEFT COLUMN ───── -->
+      <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="5">
+
+          <!-- Firmware -->
+          <Border Classes="card" Padding="8,6">
+            <Grid ColumnDefinitions="*,*">
+              <StackPanel Grid.Column="0" Spacing="1">
+                <TextBlock Text="SECURE BOOT" Classes="h"/>
+                <TextBlock Text="{Binding SecureBootBadgeText}" FontSize="10" FontWeight="Bold"
+                           Foreground="{Binding SecureBootBadgeForeground}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="1">
+                <TextBlock Text="BOOTLOADER" Classes="h"/>
+                <TextBlock Text="{Binding Firmware.OpenCoreVersion, FallbackValue='Not Detected'}"
+                           FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- EFI Browser -->
+          <Border Classes="card" Padding="8,7">
+            <StackPanel Spacing="5">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="EFI Partition &amp; Browser"
+                           FontSize="10" FontWeight="SemiBold" Foreground="#E2E8F0"/>
+                <Button Grid.Column="1" Content="⟳" Command="{Binding RefreshPartitionsCommand}"
+                        Background="#1E293B" Foreground="#38BDF8" FontSize="10" Padding="5,1"/>
+              </Grid>
+
+              <!-- Path row -->
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBox Grid.Column="0" Text="{Binding SelectedPath}"
+                         Watermark="e.g. D:\ or /boot/efi"
+                         Height="24" FontSize="10"/>
+                <Button Grid.Column="1" Content="📁" Command="{Binding BrowseFolderCommand}"
+                        Background="#1E293B" Foreground="#E2E8F0"
+                        FontSize="10" Padding="6,2" Margin="3,0,0,0"
+                        ToolTip.Tip="Browse folder"/>
+                <Button Grid.Column="2" Content="Scan" Command="{Binding ScanPathCommand}"
+                        Background="#3B82F6" Foreground="White"
+                        FontSize="10" FontWeight="SemiBold" Padding="7,2" Margin="3,0,0,0"/>
+              </Grid>
+
+              <!-- Quick jumps -->
+              <StackPanel Orientation="Horizontal" Spacing="3">
+                <Button Content="EFI"       Command="{Binding QuickFolderCommand}" CommandParameter="EFI"
+                        Classes="chip"/>
+                <Button Content="OC"        Command="{Binding QuickFolderCommand}" CommandParameter="OC"
+                        Classes="chip"/>
+                <Button Content="BOOT"      Command="{Binding QuickFolderCommand}" CommandParameter="BOOT"
+                        Classes="chip"/>
+                <Button Content="Microsoft" Command="{Binding QuickFolderCommand}" CommandParameter="Microsoft"
+                        Classes="chip"/>
+              </StackPanel>
+
+              <Separator Background="#25283D" Height="1"/>
+
+              <!-- Mount letter picker -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="Detected Partitions:" Classes="h" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="Mount to:" Classes="h" VerticalAlignment="Center"/>
+                  <ComboBox ItemsSource="{Binding AvailableDriveLetters}"
+                            SelectedItem="{Binding SelectedMountLetter}"
+                            Width="58" Height="22" FontSize="10"/>
+                </StackPanel>
+              </Grid>
+
+              <!-- Partition rows -->
+              <ItemsControl ItemsSource="{Binding Partitions}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="#1C1E2F" BorderBrush="#2A2D45" BorderThickness="1"
+                            CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4"
+                                    VerticalAlignment="Center" Margin="0,0,5,0">
+                          <TextBlock Text="{Binding DriveIcon}" FontSize="12" VerticalAlignment="Center"/>
+                          <Ellipse Width="6" Height="6" Fill="{Binding MountDotColor}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Id}" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+                          <TextBlock Text="{Binding FormattedSize}" FontSize="9" Foreground="#64748B"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                          <Button Content="Select" Click="OnSelectPartitionClick"
+                                  Background="#1E293B" Foreground="#38BDF8" FontSize="9" Padding="4,1"/>
+                          <Button Content="{Binding #ThisWindow.((vm:MainWindowViewModel)DataContext).MountButtonLabel}"
+                                  Click="OnMountPartitionClick"
+                                  IsVisible="{Binding !IsMounted}"
+                                  Background="#10281F" Foreground="#34D399"
+                                  FontWeight="SemiBold" FontSize="9" Padding="4,1"/>
+                          <Button Content="⏏ Eject" Click="OnUnmountPartitionClick"
+                                  IsVisible="{Binding IsMounted}"
+                                  Background="#2A1215" Foreground="#F87171" FontSize="9" Padding="4,1"/>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <TextBlock Text="No EFI partitions detected. Use Browse above."
+                         IsVisible="{Binding HasNoPartitions}"
+                         FontSize="9" Foreground="#64748B" FontStyle="Italic"/>
+            </StackPanel>
+          </Border>
+
+          <!-- Key & BIOS -->
+          <Border Classes="card" Padding="8,7">
+            <StackPanel Spacing="5">
+              <TextBlock Text="Signing Key &amp; BIOS Enrollment"
+                         FontSize="10" FontWeight="SemiBold" Foreground="#E2E8F0"/>
+
+              <Border Background="#1C1E2F" BorderBrush="#2A2D45" BorderThickness="1"
+                      CornerRadius="4" Padding="6,4">
+                <StackPanel Spacing="1">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="Key: " Classes="h"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding KeyInfo.Subject, FallbackValue='No key loaded'}"
+                               FontSize="10" FontWeight="SemiBold" Foreground="#C4B5FD"
+                               TextTrimming="CharacterEllipsis"/>
+                  </Grid>
+                  <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding HasKey}">
+                    <TextBlock Grid.Column="0" Text="Exp: " Classes="h"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding KeyInfo.NotAfter, StringFormat='{}{0:yyyy-MM-dd}'}"
+                               FontSize="10" Foreground="#94A3B8"/>
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                <Button Grid.Row="0" Grid.Column="0" Content="✨ Generate..."
+                        Command="{Binding GenerateKeyDialogCommand}"
+                        Background="#10B981" Foreground="White" FontWeight="SemiBold"
+                        FontSize="10" Margin="0,0,2,3"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                <Button Grid.Row="0" Grid.Column="1" Content="📂 Import..."
+                        Command="{Binding ImportKeyCommand}"
+                        Background="#1E293B" Foreground="#E2E8F0"
+                        FontSize="10" Margin="2,0,0,3"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                <Button Grid.Row="1" Grid.Column="0" Content="💾 Export BIOS"
+                        Command="{Binding ExportBiosCommand}"
+                        Background="#8B5CF6" Foreground="White" FontWeight="SemiBold"
+                        FontSize="10" Margin="0,0,2,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Export db.cer and db.esl for BIOS enrollment"/>
+                <Button Grid.Row="1" Grid.Column="1" Content="📁 Key Folder"
+                        Command="{Binding OpenKeyFolderCommand}"
+                        Background="#1E293B" Foreground="#94A3B8"
+                        FontSize="10" Margin="2,0,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              </Grid>
+
+              <Button Content="📁 Backups History"
+                      Command="{Binding OpenBackupsFolderCommand}"
+                      Background="#1E293B" Foreground="#64748B"
+                      FontSize="9" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ───── RIGHT COLUMN ───── -->
+      <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*,Auto,110">
+
+        <!-- Row 0: Summary + guidance -->
+        <Border Grid.Row="0" Classes="card" Margin="0,0,0,5" Padding="8,6">
+          <StackPanel Spacing="5">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="1">
+                <TextBlock Text="{Binding SelectedPath, FallbackValue='No directory selected'}"
+                           FontSize="12" FontWeight="Bold" Foreground="#FFFFFF"
+                           TextTrimming="CharacterEllipsis"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{Binding TotalFileCount, StringFormat='{}{0} EFI files'}"
+                             FontSize="10" Foreground="#94A3B8"/>
+                  <TextBlock Text="•" Foreground="#64748B" FontSize="10"/>
+                  <TextBlock Text="{Binding NeedsSigningCount, StringFormat='{}{0} need signing'}"
+                             FontSize="10" FontWeight="SemiBold"
+                             Foreground="{Binding NeedsSigningForeground}"/>
+                  <TextBlock Text="•" Foreground="#64748B" FontSize="10"/>
+                  <TextBlock Text="{Binding SignedByUsCount, StringFormat='{}{0} signed with your key'}"
+                             FontSize="10" Foreground="#34D399"/>
+                </StackPanel>
+              </StackPanel>
+              <Border Grid.Column="1" CornerRadius="5" Padding="8,4"
+                      Background="{Binding ReadyBadgeBackground}"
+                      BorderBrush="{Binding ReadyBadgeBorder}" BorderThickness="1"
+                      VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="{Binding ReadyBadgeIcon}" FontSize="11" VerticalAlignment="Center"/>
+                  <TextBlock Text="{Binding ReadyBadgeText}" FontWeight="Bold" FontSize="10"
+                             Foreground="{Binding ReadyBadgeForeground}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <Border Background="#101E33" BorderBrush="#1D4ED8" BorderThickness="1"
+                    CornerRadius="4" Padding="8,5">
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Grid.Column="0" Text="↪ " FontSize="11" FontWeight="Bold"
+                           Foreground="#38BDF8" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding NextStepMessage}"
+                           FontSize="10" FontWeight="SemiBold" Foreground="#38BDF8"
+                           TextWrapping="Wrap" VerticalAlignment="Center"/>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- Row 1: OC Warnings (conditional) -->
+        <Border Grid.Row="1" Classes="card" Margin="0,0,0,5" Padding="8,5"
+                Background="#2C1D11" BorderBrush="#D97706"
+                IsVisible="{Binding HasConfigWarnings}">
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <TextBlock Text="⚠️" FontSize="11" VerticalAlignment="Center"/>
+              <TextBlock Text="OpenCore config.plist Warnings — must resolve for Secure Boot"
+                         FontSize="10" FontWeight="Bold" Foreground="#F59E0B"/>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding ConfigWarnings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                    <TextBlock Grid.Column="0" Text="{Binding Message, StringFormat='• {0}'}"
+                               FontSize="10" Foreground="#FCD34D"
+                               TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Content="{Binding Fix.Title, StringFormat='Fix: {0}', FallbackValue='Fix'}"
+                            Click="OnApplyFixClick"
+                            Background="#D97706" Foreground="White"
+                            FontWeight="Bold" FontSize="10" Padding="7,2" Margin="6,0,0,0"/>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- Row 2: EFI Files DataGrid -->
+        <Border Grid.Row="2" Classes="card" Margin="0,0,0,5" Padding="0">
+          <Grid RowDefinitions="Auto,*">
+
+            <!-- Filter toolbar -->
+            <Border Grid.Row="0" Background="#1C1E2F" BorderBrush="#25283D"
+                    BorderThickness="0,0,0,1" Padding="6,4">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0" Text="{Binding SearchFilter}"
+                         Watermark="Search by file name, role, or signer..."
+                         Height="22" FontSize="10" Margin="0,0,5,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+                  <Button Content="All"             Click="OnFilterTabClick" Tag="All"
+                          Background="#1E293B" Foreground="#E2E8F0" FontSize="9" Padding="6,2"/>
+                  <Button Content="⚠️ Needs Signing" Click="OnFilterTabClick" Tag="NeedsSigning"
+                          Background="#2A1215" Foreground="#F87171" FontSize="9" Padding="6,2"/>
+                  <Button Content="🛡️ Signed by Us" Click="OnFilterTabClick" Tag="SignedWithKey"
+                          Background="#10281F" Foreground="#34D399" FontSize="9" Padding="6,2"/>
+                  <Button Content="Other"           Click="OnFilterTabClick" Tag="Other"
+                          Background="#1E293B" Foreground="#94A3B8" FontSize="9" Padding="6,2"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <DataGrid Grid.Row="1" ItemsSource="{Binding FilteredFiles}"
+                      AutoGenerateColumns="False" CanUserResizeColumns="True"
+                      GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                      Background="#171926" BorderThickness="0">
+              <DataGrid.Columns>
+                <DataGridTemplateColumn Header="✓" Width="32" IsReadOnly="False">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <!-- Focusable=False lets the first click go straight to the CheckBox
+                           instead of being consumed by row-focus, eliminating the double-click. -->
+                      <CheckBox IsChecked="{Binding IsSelected}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Focusable="False"/>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="EFI File (Relative Path)" Width="240">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding RelativePath}"
+                                 FontFamily="Consolas, monospace" FontSize="10"
+                                 Foreground="#FFFFFF" VerticalAlignment="Center"
+                                 Margin="5,0" TextTrimming="CharacterEllipsis"/>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Status" Width="160">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <Border Background="{Binding StatusBadgeBackground}"
+                              BorderBrush="{Binding StatusBadgeBorder}"
+                              BorderThickness="1" CornerRadius="3"
+                              Padding="4,1" Margin="3,2" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding StatusIcon}" FontSize="9" VerticalAlignment="Center"/>
+                          <TextBlock Text="{Binding StatusText}" FontSize="9" FontWeight="SemiBold"
+                                     Foreground="{Binding StatusForeground}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="120" FontSize="10"/>
+
+                <DataGridTemplateColumn Header="Signer / Expiry" Width="*">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding SignerDescription}" FontSize="10"
+                                 Foreground="#CBD5E1" VerticalAlignment="Center"
+                                 Margin="5,0" TextTrimming="CharacterEllipsis"
+                                 ToolTip.Tip="{Binding SignerDescription}"/>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Size" Binding="{Binding FormattedSize}" Width="68" FontSize="10"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Border>
+
+        <!-- Row 3: Action bar -->
+        <Border Grid.Row="3" Classes="card" Margin="0,0,0,5" Padding="7,5">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+              <Button Content="{Binding NeedsSigningCount, StringFormat='✍️ Sign needed ({0})'}"
+                      Command="{Binding SignNeededCommand}"
+                      IsEnabled="{Binding NeedsSigningCount}"
+                      Background="#10B981" Foreground="White"
+                      FontWeight="Bold" FontSize="10" Padding="11,4"
+                      ToolTip.Tip="Sign all files the firmware would reject under Secure Boot"/>
+              <Button Content="✔️ Sign selected" Command="{Binding SignSelectedCommand}"
+                      Background="#1E293B" Foreground="#E2E8F0" FontSize="10" Padding="9,4"/>
+              <Button Content="🔄 Re-sign all"  Command="{Binding ReSignAllCommand}"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="10" Padding="9,4"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+              <Button Content="↩️ Revert selected"   Command="{Binding RevertSelectedCommand}"
+                      Background="#1E293B" Foreground="#F87171" FontSize="10" Padding="8,4"/>
+              <Button Content="↩️ Revert all"        Command="{Binding RevertAllCommand}"
+                      Background="#1E293B" Foreground="#F87171" FontSize="10" Padding="8,4"/>
+              <Button Content="⏪ Restore config"    Command="{Binding RestoreConfigCommand}"
+                      Background="#1E293B" Foreground="#F59E0B" FontSize="10" Padding="8,4"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Row 4: Activity Log -->
+        <Border Grid.Row="4" Classes="card" Padding="7,5">
+          <Grid RowDefinitions="Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,3">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                <TextBlock Text="Activity Log"
+                           FontSize="10" FontWeight="SemiBold" Foreground="#E2E8F0"/>
+                <ProgressBar IsIndeterminate="True" Width="60" Height="3"
+                             VerticalAlignment="Center" IsVisible="{Binding IsBusy}"/>
+                <TextBlock Text="{Binding BusyText}" FontSize="9" Foreground="#38BDF8"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+              <Button Grid.Column="1" Content="Clear" Command="{Binding ClearLogsCommand}"
+                      Background="#1E293B" Foreground="#64748B" FontSize="9" Padding="5,1"/>
+            </Grid>
+            <TextBox Grid.Row="1" Text="{Binding LogContent}" IsReadOnly="True"
+                     FontFamily="Consolas, monospace" FontSize="9"
+                     Background="#090B10" Foreground="#A7F3D0"
+                     BorderThickness="0" AcceptsReturn="True" TextWrapping="Wrap"/>
+          </Grid>
+        </Border>
+
+      </Grid>
+    </Grid>
+  </Grid>
+
+</Window>

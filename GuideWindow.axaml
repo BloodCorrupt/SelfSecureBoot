@@ -1,0 +1,191 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SelfSecureBoot.GuideWindow"
+        Title="EFI Signer User Guide &amp; BIOS Enrollment Documentation"
+        Width="880" Height="700" MinWidth="750" MinHeight="550"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F111A">
+
+  <Window.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#171926"/>
+      <Setter Property="BorderBrush" Value="#25283D"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16"/>
+      <Setter Property="Margin" Value="0,0,0,14"/>
+    </Style>
+
+    <Style Selector="TextBlock.guideSectionTitle">
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <Style Selector="TextBlock.guideBody">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="#CBD5E1"/>
+      <Setter Property="LineHeight" Value="18"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style Selector="TextBlock.stepNum">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="#38BDF8"/>
+      <Setter Property="Width" Value="24"/>
+      <Setter Property="VerticalAlignment" Value="Top"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*" Margin="20,16,20,16">
+    <!-- Top Header -->
+    <Border Grid.Row="0" Classes="card" Padding="14,12" Margin="0,0,0,12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" Spacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="📖" FontSize="20" VerticalAlignment="Center"/>
+            <TextBlock Text="EFI Signer Guide &amp; Instructions" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"/>
+          </StackPanel>
+          <TextBlock Text="Step-by-step guide: Signing OpenCore EFI bootloaders, enrolling db.cer in BIOS, and keeping UEFI Secure Boot enabled."
+                     FontSize="12" Foreground="#94A3B8"/>
+        </StackPanel>
+        <Button Grid.Column="1" Content="Close" Click="OnCloseClick" Background="#1E293B" Foreground="#94A3B8" Padding="14,6" FontSize="12" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <!-- Scrollable Content -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+      <StackPanel Spacing="4">
+
+        <!-- Section 1: What this app does -->
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="ℹ️" FontSize="16"/>
+              <TextBlock Text="What this app does" Classes="guideSectionTitle"/>
+            </StackPanel>
+            <TextBlock Classes="guideBody"
+                       Text="A PC firmware with UEFI Secure Boot enabled will only execute EFI binaries signed by a certificate enrolled in its authorized database (db). OpenCore, its drivers, and tools are distributed unsigned, requiring users to switch Secure Boot off to boot macOS. EFI Signer signs those EFI files with your own private certificate. Once the certificate is enrolled into the BIOS db, Secure Boot can remain fully enabled and enforced."/>
+          </StackPanel>
+        </Border>
+
+        <!-- Section 2: One-time setup -->
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="1️⃣" FontSize="16"/>
+              <TextBlock Text="One-Time Setup Walkthrough" Classes="guideSectionTitle"/>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="1." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Generate a new signing key: Use the Signing Key panel → 'Generate New Key...'. This creates an RSA-2048 key pair and certificate on your machine. If you already have db.key and db.crt, use Import instead."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="2." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Select your EFI partition or browse to your EFI folder: Click on your boot disk's EFI partition in the left sidebar (or click 'Browse Folder...' to select any EFI folder inline). If unmounted on Windows, click 'Mount (Z:)'."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="3." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Review the status header: Green 'Ready for Secure Boot' means every EFI binary the firmware executes is signed with your key and OpenCore's config.plist has no blockers. Red indicates files need signing or a config warning is present."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="4." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Resolve OpenCore config.plist warnings: Each warning provides an inline 'Fix...' button that updates config.plist automatically after preserving a backup. In particular, SecureBootModel must not be 'Disabled'."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="5." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Press 'Sign needed': Every file the firmware would reject under Secure Boot is signed in place. Original unsigned files are backed up automatically in the Backups folder."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="6." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Export certificate for BIOS: Click 'Export for BIOS...' and choose a FAT32 USB flash drive. This writes db.cer and db.esl to the drive."/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="7." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Reboot into motherboard BIOS: Under Secure Boot, switch to 'Custom' mode or open 'Key Management'. Select 'db' (Authorized Signatures) → 'Append' / 'Add from file', and choose db.cer (or db.esl). Keep Microsoft's keys intact: they sign your graphics card Option ROM and Windows OS!"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="8." Classes="stepNum"/>
+              <TextBlock Grid.Column="1" Classes="guideBody" Text="Enable UEFI Secure Boot, save settings, and reboot. OpenCore will boot seamlessly with Secure Boot enforced!"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Section 3: Motherboard vendor instructions & links -->
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🔗" FontSize="16"/>
+              <TextBlock Text="Enrolling Certificate in BIOS (By Motherboard Brand)" Classes="guideSectionTitle"/>
+            </StackPanel>
+            <TextBlock Classes="guideBody" Text="Secure Boot key menus unlock in 'Custom' mode (ASUS, ASRock, Gigabyte, MSI) or via custom policy (Dell, Lenovo, HP). Select 'db' → 'Append', and pick db.cer:"/>
+
+            <StackPanel Spacing="6" Margin="0,6,0,0">
+              <Button Content="🌐 ASUS: Secure Boot FAQ (Custom Mode → Key Management)" Click="OnLinkClick" Tag="https://www.asus.com/support/faq/1049829/"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 ASRock: FAQ 531 (Security → Secure Boot → Custom → Key Management)" Click="OnLinkClick" Tag="https://www.asrock.com/support/faq.asp?id=531"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 Gigabyte: FAQ 4395 (Boot → Secure Boot Mode → Custom → Key Management)" Click="OnLinkClick" Tag="https://www.gigabyte.com/Support/Consumer/Faq/4395"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 MSI: BIOS User Guide (Custom Mode Key Management)" Click="OnLinkClick" Tag="https://download-2.msi.com/archive/mnu_exe/mb/AMDAM5BIOS.pdf"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 Dell: Expert Key Management (Custom Mode → db → Append)" Click="OnLinkClick" Tag="https://www.dell.com/support/kbdoc/en-us/000368610/how-to-update-secure-boot-active-database-from-bios"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 Lenovo: Secure Boot Policy (Custom Policy → Enroll DB from file)" Click="OnLinkClick" Tag="https://pubs.lenovo.com/uefi_edge_v2/secure_boot_custom_policy"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+              <Button Content="🌐 HP: Business PCs (Custom Keys → Import DB)" Click="OnLinkClick" Tag="https://ftp.hp.com/pub/caps-softpaq/cmit/whitepapers/HPBIOSSetup.pdf"
+                      Background="#1E293B" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Left"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Section 4: After OpenCore Updates -->
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="🔄" FontSize="16"/>
+              <TextBlock Text="After Every OpenCore Update" Classes="guideSectionTitle"/>
+            </StackPanel>
+            <TextBlock Classes="guideBody"
+                       Text="When upgrading OpenCore, new binary files replace existing ones, resetting their signatures. Simply copy new OpenCore files onto your EFI partition, open EFI Signer, and click 'Sign needed'. No changes in the BIOS are needed, because your certificate remains enrolled in the motherboard firmware!"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Section 5: Status meanings -->
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="📋" FontSize="16"/>
+              <TextBlock Text="Status Column Guide" Classes="guideSectionTitle"/>
+            </StackPanel>
+            <TextBlock Classes="guideBody" Text="• Needs signing: The binary is unsigned; UEFI Secure Boot firmware will refuse to execute it.&#x0a;• Signed with your key: Verified and signed with your enrolled certificate. Ready to boot.&#x0a;• Signed (other key): Microsoft Windows Boot Manager or OEM signed. Valid while Microsoft CA remains in BIOS db.&#x0a;• Signature broken: The binary was modified after signing; click Sign to re-sign.&#x0a;• Not loaded: OpenCore driver/tool disabled in config.plist, or Apple firmware updater."/>
+          </StackPanel>
+        </Border>
+
+        <!-- Section 6: Recovery and Troubleshooting -->
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="⚠️" FontSize="16"/>
+              <TextBlock Text="If a Boot Fails Under Secure Boot" Classes="guideSectionTitle"/>
+            </StackPanel>
+            <TextBlock Classes="guideBody"
+                       Text="1. Temporarily switch Secure Boot off in the BIOS and boot your OS. (Windows continues booting either way due to its Microsoft signature).&#x0a;2. Open EFI Signer and check for red rows or config warnings on the boot disk's EFI partition.&#x0a;3. Use 'Revert' to restore files from the original backups, or 'Restore original config.plist' to roll back config modifications.&#x0a;4. Verify with EFI Signer until the header displays green 'Ready for Secure Boot'."/>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Window>
+

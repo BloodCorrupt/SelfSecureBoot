@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SelfSecureBoot.GenerateKeyWindow"
+        Title="Generate Signing Key - EFI Signer"
+        Width="500" Height="420" CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0F111A">
+
+  <Window.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#171926"/>
+      <Setter Property="BorderBrush" Value="#25283D"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14"/>
+    </Style>
+
+    <Style Selector="TextBlock.fieldLabel">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Foreground" Value="#94A3B8"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto" Margin="18">
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="🔑" FontSize="18" VerticalAlignment="Center"/>
+        <TextBlock Text="Generate UEFI Signing Key" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
+      </StackPanel>
+      <TextBlock Text="Creates an RSA key pair and self-signed X.509 code signing certificate. The certificate (db.cer / db.esl) is enrolled into your BIOS Secure Boot database."
+                 FontSize="11" Foreground="#94A3B8" TextWrapping="Wrap"/>
+    </StackPanel>
+
+    <!-- Main Card Body -->
+    <Border Grid.Row="1" Classes="card">
+      <StackPanel Spacing="12">
+        <!-- Common Name -->
+        <StackPanel>
+          <TextBlock Text="Certificate Name (Common Name):" Classes="fieldLabel"/>
+          <TextBox x:Name="TxtCommonName" Text="OpenCore Secure Boot Signing" Height="30" FontSize="12"/>
+        </StackPanel>
+
+        <!-- Validity Period -->
+        <StackPanel>
+          <TextBlock Text="Validity Period (Years):" Classes="fieldLabel"/>
+          <Grid ColumnDefinitions="*,Auto">
+            <Slider x:Name="SliderYears" Minimum="1" Maximum="20" Value="10" SmallChange="1" LargeChange="1"/>
+            <TextBlock Grid.Column="1" Text="{Binding #SliderYears.Value, StringFormat='{}{0:0} Years'}"
+                       Width="70" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#38BDF8"/>
+          </Grid>
+        </StackPanel>
+
+        <!-- Key Size -->
+        <StackPanel>
+          <TextBlock Text="RSA Key Size:" Classes="fieldLabel"/>
+          <ComboBox x:Name="CmbKeySize" SelectedIndex="0" HorizontalAlignment="Stretch" Height="30" FontSize="12">
+            <ComboBoxItem Content="RSA 2048-bit (Standard UEFI Default - Recommended)"/>
+            <ComboBoxItem Content="RSA 3072-bit (Enhanced Security)"/>
+            <ComboBoxItem Content="RSA 4096-bit (Maximum Security)"/>
+          </ComboBox>
+        </StackPanel>
+
+        <!-- Warning Callout -->
+        <Border Background="#2C1D11" BorderBrush="#D97706" BorderThickness="1" CornerRadius="6" Padding="10,8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="⚠️" FontSize="14" VerticalAlignment="Top"/>
+            <TextBlock Text="Generating a new key replaces any existing key. Files previously signed will require re-signing."
+                       FontSize="11" Foreground="#F59E0B" TextWrapping="Wrap" MaxWidth="370"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <!-- Bottom Action Buttons -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,14,0,0">
+      <Button Content="Cancel" Click="OnCancelClick" Background="#1E293B" Foreground="#94A3B8" Padding="14,6" FontSize="12"/>
+      <Button Content="Generate Key" Click="OnGenerateClick" Background="#10B981" Foreground="White" FontWeight="Bold" Padding="18,6" FontSize="12"/>
+    </StackPanel>
+  </Grid>
+</Window>
+

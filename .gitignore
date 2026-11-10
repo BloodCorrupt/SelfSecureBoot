@@ -1,0 +1,37 @@
+# ── .NET build output ───────────────────────────────────────────────────────
+bin/
+obj/
+distribute/
+*.nupkg
+*.snupkg
+
+# ── IDE & editor ────────────────────────────────────────────────────────────
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# ── Private key material — NEVER commit private keys ────────────────────────
+*.key
+*.pem
+# db.cer and db.esl are public (safe to commit if desired), excluded by choice:
+# *.cer
+# *.esl
+
+# ── Local app-data (backups, generated runtime files) ───────────────────────
+AppData/
+
+# ── Scratch / codegen helpers (not part of the app) ─────────────────────────
+scratch/
+
+# ── macOS Swift reference implementation (kept local only) ──────────────────
+efisigner/
+
+# ── macOS junk ──────────────────────────────────────────────────────────────
+.DS_Store
+._*
+Thumbs.db
