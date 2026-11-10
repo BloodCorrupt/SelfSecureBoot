@@ -2,7 +2,7 @@
 
 A cross-platform UEFI Secure Boot manager and Authenticode PE signer for OpenCore, built with **C# (.NET 10)** and **Avalonia UI** for **Windows** and **Linux**.
 
-Ported from macOS [efisigner](efisigner/) and styled using the dark Fluent design framework from [InventoryAssist](C:/Users/Bloodtek/Documents/dev/InventoryAssist).
+Ported from macOS [efisigner](https://github.com/razvanccr/efisigner) and styled using the dark Fluent design.
 
 ---
 
@@ -35,17 +35,6 @@ Ported from macOS [efisigner](efisigner/) and styled using the dark Fluent desig
   * Reads UEFI Secure Boot enforcement status, Setup Mode, and OpenCore version across Windows and Linux.
 * **Built-in Documentation**:
   * Step-by-step BIOS enrollment walkthrough for ASUS, ASRock, Gigabyte, MSI, Dell, Lenovo, and HP motherboards with official vendor links.
-
----
-
-## 🛠️ Design Framework
-
-Built using the sleek dark theme from **InventoryAssist**:
-* Window Background: `#0F111A`
-* Card Panels: `#171926` with border `#25283D`
-* Stat Badges: Color-coded status pills with borders (`#10281F` emerald green for signed/mounted, `#2A1215` crimson for unsigned/broken, `#2E1A47` violet for keys).
-* Dynamic DPI scaling toggle (`Force 100% DPI` with `LayoutTransformControl`) preventing overflow on high-DPI displays.
-* Real-time activity console with timestamped logs and auto-scrolling.
 
 ---
 
