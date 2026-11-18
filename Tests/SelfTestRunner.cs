@@ -243,6 +243,85 @@ public static class SelfTestRunner
                 Assert("OpenCoreConfig: Fix SecureBootModel -> Default",
                     ocAfter1?.SecureBootModel == "Default");
 
+                // Verify serialization format (No BOM, DOCTYPE preserved without [], LF line endings)
+                byte[] rawBytes = File.ReadAllBytes(plistPath);
+                string plistContent = File.ReadAllText(plistPath);
+                bool hasBom = rawBytes.Length >= 3 && rawBytes[0] == 0xEF && rawBytes[1] == 0xBB && rawBytes[2] == 0xBF;
+                bool hasCrlf = plistContent.Contains('\r');
+                bool hasExpectedDoctype = plistContent.Contains("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">");
+                bool hasEmptyBracket = plistContent.Contains("[]");
+
+                Assert("OpenCoreConfig: Plist format strictly UTF-8 without BOM", !hasBom);
+                Assert("OpenCoreConfig: Plist line endings normalized to LF", !hasCrlf);
+                Assert("OpenCoreConfig: Plist DOCTYPE preserved without empty subset brackets", hasExpectedDoctype && !hasEmptyBracket);
+
+                // Test edge case: plist missing DOCTYPE is reconstructed on fix
+                string noDoctypePlist = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <plist version="1.0">
+                <dict>
+                    <key>UEFI</key>
+                    <dict>
+                        <key>Quirks</key>
+                        <dict>
+                            <key>DisableSecurityPolicy</key>
+                            <true/>
+                        </dict>
+                    </dict>
+                </dict>
+                </plist>
+                """;
+                File.WriteAllText(plistPath, noDoctypePlist);
+                OpenCoreConfig.ApplyFix(ConfigFix.DisableSecurityPolicyOff, tempDir, null);
+                string reconstructedText = File.ReadAllText(plistPath);
+                Assert("OpenCoreConfig: Plist without DOCTYPE has DOCTYPE reconstructed",
+                    reconstructedText.Contains("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">") &&
+                    !reconstructedText.Contains("[]"));
+
+                // Test edge case: plist with BOM, CRLF, empty tags, and comments
+                string complexPlistWithBomAndCrlf =
+                    "<!-- Sample Comment -->\r\n" +
+                    "<plist version=\"1.0\">\r\n" +
+                    "<dict>\r\n" +
+                    "\t<key>EmptyData</key>\r\n" +
+                    "\t<data></data>\r\n" +
+                    "\t<key>EmptyString</key>\r\n" +
+                    "\t<string></string>\r\n" +
+                    "\t<key>EmptyDict</key>\r\n" +
+                    "\t<dict/>\r\n" +
+                    "\t<key>EmptyArray</key>\r\n" +
+                    "\t<array/>\r\n" +
+                    "\t<key>Misc</key>\r\n" +
+                    "\t<dict>\r\n" +
+                    "\t\t<key>Security</key>\r\n" +
+                    "\t\t<dict>\r\n" +
+                    "\t\t\t<key>SecureBootModel</key>\r\n" +
+                    "\t\t\t<string>Disabled</string>\r\n" +
+                    "\t\t</dict>\r\n" +
+                    "\t</dict>\r\n" +
+                    "</dict>\r\n" +
+                    "</plist>\r\n";
+                // Write with UTF-8 BOM and CRLF
+                byte[] bom = [0xEF, 0xBB, 0xBF];
+                byte[] complexBytes = bom.Concat(System.Text.Encoding.UTF8.GetBytes(complexPlistWithBomAndCrlf)).ToArray();
+                File.WriteAllBytes(plistPath, complexBytes);
+
+                OpenCoreConfig.ApplyFix(ConfigFix.SecureBootModelDefault, tempDir, null);
+
+                byte[] edgeResultBytes = File.ReadAllBytes(plistPath);
+                string edgeResultText = File.ReadAllText(plistPath);
+                bool edgeHasBom = edgeResultBytes.Length >= 3 && edgeResultBytes[0] == 0xEF && edgeResultBytes[1] == 0xBB && edgeResultBytes[2] == 0xBF;
+                bool edgeHasCrlf = edgeResultText.Contains('\r');
+                bool edgeHasDoctype = edgeResultText.Contains("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">");
+                bool edgeHasEmptyBracket = edgeResultText.Contains("[]");
+                var roundtripDoc = System.Xml.Linq.XDocument.Load(plistPath);
+                bool emptyTagsPreserved = roundtripDoc.Root?.Element("dict")?.Element("key")?.Value == "EmptyData";
+
+                Assert("OpenCoreConfig: Strips BOM from input file on fix", !edgeHasBom);
+                Assert("OpenCoreConfig: Replaces CRLF with LF on fix", !edgeHasCrlf);
+                Assert("OpenCoreConfig: Inserts DOCTYPE on input with BOM/comments", edgeHasDoctype && !edgeHasEmptyBracket);
+                Assert("OpenCoreConfig: Roundtrip XML preserves empty tags and structure", emptyTagsPreserved);
+
                 // Apply Fix 2: DisableSecurityPolicy to false
                 OpenCoreConfig.ApplyFix(ConfigFix.DisableSecurityPolicyOff, tempDir, Path.Combine(tempDir, "Backups"));
                 var ocAfter2 = OpenCoreConfig.Load(tempDir);

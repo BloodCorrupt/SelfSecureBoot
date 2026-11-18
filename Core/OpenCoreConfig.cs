@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace SelfSecureBoot.Core;
@@ -255,7 +257,39 @@ public sealed class OpenCoreConfig
                 break;
         }
 
-        doc.Save(configPath);
+        SaveConfig(doc, configPath);
+    }
+
+    public static void SaveConfig(XDocument doc, string configPath)
+    {
+        if (doc.Declaration == null)
+        {
+            doc.Declaration = new XDeclaration("1.0", "utf-8", null);
+        }
+
+        var doctype = new XDocumentType("plist", "-//Apple//DTD PLIST 1.0//EN", "http://www.apple.com/DTDs/PropertyList-1.0.dtd", null);
+        if (doc.DocumentType != null)
+        {
+            doc.DocumentType.ReplaceWith(doctype);
+        }
+        else
+        {
+            doc.AddFirst(doctype);
+        }
+
+        var settings = new XmlWriterSettings
+        {
+            Encoding = new UTF8Encoding(false), // UTF-8 without BOM
+            Indent = true,
+            IndentChars = "\t",
+            NewLineChars = "\n",
+            NewLineHandling = NewLineHandling.Replace,
+            OmitXmlDeclaration = false
+        };
+
+        using var stream = File.Create(configPath);
+        using var writer = XmlWriter.Create(stream, settings);
+        doc.Save(writer);
     }
 
     #region XML Plist Traversal Helpers
